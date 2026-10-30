@@ -30,7 +30,14 @@ jobs:
           python -m unittest discover -s tools -p 'test_*.py'
       - name: Build APK
         run: gradle --no-daemon assembleDebug
+      - name: Include signing tool for private asset packaging
+        run: |
+          signer=$(rg --files "$ANDROID_HOME/build-tools" | rg '/lib/apksigner.jar$' | sort -V | tail -1)
+          test -n "$signer"
+          cp "$signer" app/build/outputs/apk/debug/apksigner.jar
       - uses: actions/upload-artifact@v4
         with:
           name: Pokemon-with-friends-debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/apksigner.jar
