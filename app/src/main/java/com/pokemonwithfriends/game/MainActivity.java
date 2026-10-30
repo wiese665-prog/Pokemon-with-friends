@@ -22,7 +22,6 @@ public class MainActivity extends Activity {
  class Game extends View {
   Paint p=new Paint(3);boolean playing=false;
   Bitmap[] portraits=new Bitmap[2];
-  Bitmap[] walkSheets=new Bitmap[2];
   int direction=0, walkFrame=0;
   Bitmap[] walkers=new Bitmap[2];
 
@@ -47,8 +46,6 @@ public class MainActivity extends Activity {
    "TTGGGGGGGGGGGGGGGGTT",
    "TTTTTTTTTTTTTTTTTTTT"};
   Game(){super(MainActivity.this);
-   String[] walkPaths={"gold_walk.png","lyra_walk.png"};
-   for(int i=0;i<2;i++)try(java.io.InputStream in=getAssets().open(walkPaths[i])) { walkSheets[i]=BitmapFactory.decodeStream(in); }catch(Exception ignored){}
    try {String[] names={"boy.png.base64","girl.png.base64"};for(int i=0;i<2;i++){
     java.io.InputStream stream=getAssets().open(names[i]);
     java.io.ByteArrayOutputStream buf=new java.io.ByteArrayOutputStream();byte[] tmp=new byte[4096];int n;
@@ -112,7 +109,7 @@ public class MainActivity extends Activity {
    c.restore();
   }
   void move(int dx,int dy){
-   direction=dy>0?0:dx<0?1:dx>0?2:3;
+   direction=dy>0?0:dy<0?1:dx<0?2:3;
    int nx=px+dx,ny=py+dy;
    if(nx>=0&&ny>=0&&ny<map.length&&nx<map[ny].length()&&map[ny].charAt(nx)!='H'&&map[ny].charAt(nx)!='T'){px=nx;py=ny;walkFrame=(walkFrame+1)%3;}invalidate();}
   boolean hit(float x,float y,int bx,int by,int w,int h){return x>=bx&&x<=bx+w&&y>=by&&y<=by+h;}
