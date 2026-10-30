@@ -22,6 +22,8 @@ public class MainActivity extends Activity {
  class Game extends View {
   Paint p=new Paint(3);boolean playing=false;
   Bitmap[] portraits=new Bitmap[2];
+  Bitmap[] walkers=new Bitmap[2];
+  int direction=0, walkFrame=0;
   int avatar=0,outfit=0,px=10,py=10;
   String playerName="GOLD";
   int[] colors={0xff4f78d8,0xffe85a73,0xff49a989,0xffba79df};
@@ -50,6 +52,10 @@ public class MainActivity extends Activity {
     byte[] bytes=Base64.decode(buf.toByteArray(),Base64.DEFAULT);
     portraits[i]=BitmapFactory.decodeByteArray(bytes,0,bytes.length);
    }}catch(Exception e){android.util.Log.e("PWF","Portraits not loaded",e);}
+   String[] sheets={"gold_walk.png","lyra_walk.png"};
+   for(int i=0;i<2;i++)try(java.io.InputStream stream=getAssets().open(sheets[i])){
+     walkers[i]=BitmapFactory.decodeStream(stream);
+   }catch(Exception e){android.util.Log.i("PWF","Sprite sheet not imported: "+sheets[i]);}
   }
   void box(Canvas c,float x,float y,float w,float h,int clr){p.setColor(clr);c.drawRect(x,y,x+w,y+h,p);}
   void text(Canvas c,String s,int x,int y,int size){p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextSize(size);p.setTextAlign(Paint.Align.CENTER);p.setColor(Color.WHITE);c.drawText(s,x,y,p);}
@@ -86,11 +92,13 @@ public class MainActivity extends Activity {
      if(t=='T'){p.setColor(0xff21663a);c.drawCircle(xx+16,yy+15,14,p);}
      if(t=='H'){box(c,xx,yy,32,10,0xffbe625c);box(c,xx+9,yy+17,14,12,0xff688397);}
     }
-    if(portraits[avatar]!=null){
+    float cx=px*32+16f,cy=py*32+16f;
+    Bitmap sheet=walkers[avatar];
+    if(sheet!=null && sheet.getWidth()>=3 && sheet.getHeight()>=4){
+     int fw=sheet.getWidth()/3,fh=sheet.getHeight()/4;
      p.setFilterBitmap(false);
-     float cx=px*32+16f,cy=py*32+16f;
-     c.drawBitmap(portraits[avatar],null,new RectF(cx-12,cy-22,cx+12,cy+18),p);
-    }else person(c,px*32+16,py*32+16,1);
+     c.drawBitmap(sheet,new Rect((walkFrame%3)*fw,direction*fh,(walkFrame%3+1)*fw,(direction+1)*fh),new RectF(cx-16,cy-24,cx+16,cy+16),p);
+    }else person(c,cx,cy,1);
     c.restore();
     text(c,"NEUBORKIA – PROTOTYP",500,44,22);
     button(c,85,397,52,38,"▲");button(c,25,438,52,38,"◀");
@@ -99,8 +107,10 @@ public class MainActivity extends Activity {
    }
    c.restore();
   }
-  void move(int dx,int dy){int nx=px+dx,ny=py+dy;
-   if(nx>=0&&ny>=0&&ny<map.length&&nx<map[ny].length()&&map[ny].charAt(nx)!='H'&&map[ny].charAt(nx)!='T'){px=nx;py=ny;}invalidate();}
+  void move(int dx,int dy){
+   direction=dy>0?0:dx<0?1:dx>0?2:3;
+   int nx=px+dx,ny=py+dy;
+   if(nx>=0&&ny>=0&&ny<map.length&&nx<map[ny].length()&&map[ny].charAt(nx)!='H'&&map[ny].charAt(nx)!='T'){px=nx;py=ny;walkFrame=(walkFrame+1)%3;}invalidate();}
   boolean hit(float x,float y,int bx,int by,int w,int h){return x>=bx&&x<=bx+w&&y>=by&&y<=by+h;}
   @Override public boolean onTouchEvent(MotionEvent e){
    if(e.getAction()!=MotionEvent.ACTION_DOWN)return true;
