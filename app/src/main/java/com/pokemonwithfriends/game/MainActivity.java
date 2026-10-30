@@ -25,7 +25,7 @@ public class MainActivity extends Activity {
   Bitmap[] walkSheets=new Bitmap[2];
   int direction=0, walkFrame=0;
   Bitmap[] walkers=new Bitmap[2];
-  int direction=0, walkFrame=0;
+
   int avatar=0,outfit=0,px=10,py=10;
   String playerName="GOLD";
   int[] colors={0xff4f78d8,0xffe85a73,0xff49a989,0xffba79df};
