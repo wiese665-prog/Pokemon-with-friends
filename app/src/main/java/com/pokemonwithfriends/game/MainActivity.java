@@ -3,6 +3,9 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.*;
 import android.graphics.*;
+import android.app.AlertDialog;
+import android.widget.EditText;
+import android.text.InputFilter;
 public class MainActivity extends Activity {
  Game game;
  @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().getDecorView().setSystemUiVisibility(5894|1024|512);game=new Game();setContentView(game);}
@@ -18,6 +21,7 @@ public class MainActivity extends Activity {
  class Game extends View {
   Paint p=new Paint(3);boolean playing=false;
   int avatar=0,outfit=0,px=10,py=10;
+  String playerName="GOLD";
   int[] colors={0xff4f78d8,0xffe85a73,0xff49a989,0xffba79df};
   String[] map={
    "TTTTTTTTTTTTTTTTTTTT",
@@ -42,19 +46,22 @@ public class MainActivity extends Activity {
   void button(Canvas c,int x,int y,int w,int h,String name){box(c,x,y,w,h,0xff3866ad);text(c,name,x+w/2,y+h/2+7,18);}
   void person(Canvas c,float x,float y,int scale){
    box(c,x-6*scale,y+4*scale,5*scale,10*scale,0xff283d60);box(c,x+scale,y+4*scale,5*scale,10*scale,0xff283d60);
-   box(c,x-8*scale,y-7*scale,16*scale,14*scale,colors[outfit]);
-   box(c,x-7*scale,y-21*scale,14*scale,15*scale,avatar==0?0xffefc29f:0xffbd845c);
-   box(c,x-9*scale,y-24*scale,18*scale,6*scale,0xff513d34);
+   box(c,x-8*scale,y-7*scale,16*scale,14*scale,avatar==0?0xffd84040:0xffd85b88);
+   box(c,x-7*scale,y-21*scale,14*scale,15*scale,0xffefc29f);
+   box(c,x-9*scale,y-24*scale,18*scale,6*scale,avatar==0?0xffdc2929:0xffef7197);
   }
   @Override public void onDraw(Canvas c){
    c.save();c.scale(getWidth()/960f,getHeight()/540f);
    box(c,0,0,960,540,0xff1b283b);
    if(!playing){
     text(c,"POKEMON WITH FRIENDS",480,80,36);
-    text(c,"CHARAKTER ERSTELLEN",480,125,22);
+    text(c,"WAeHLE DEINE FIGUR",480,125,22);
     box(c,335,145,290,205,0xff7dbe8f);person(c,480,275,5);
-    button(c,270,385,135,55,"FIGUR");button(c,425,385,135,55,"FARBE");
-    button(c,580,385,135,55,"START");
+    text(c,avatar==0?"JUNGE":"MAeDCHEN",480,370,22);
+    text(c,"NAME: "+playerName,480,412,20);
+    button(c,205,440,170,55,"FIGUR");
+    button(c,395,440,170,55,"NAME");
+    button(c,585,440,170,55,"START");
    }else{
     c.save();c.translate(160,12);c.scale(.8f,.8f);
     for(int y=0;y<16;y++)for(int x=0;x<20;x++){
@@ -78,9 +85,17 @@ public class MainActivity extends Activity {
    if(e.getAction()!=MotionEvent.ACTION_DOWN)return true;
    float x=e.getX()*960/getWidth(),y=e.getY()*540/getHeight();
    if(!playing){
-    if(hit(x,y,270,385,135,55))avatar=1-avatar;
-    if(hit(x,y,425,385,135,55))outfit=(outfit+1)%colors.length;
-    if(hit(x,y,580,385,135,55))playing=true;
+    if(hit(x,y,205,440,170,55))avatar=1-avatar;
+    if(hit(x,y,395,440,170,55)){
+     EditText field=new EditText(MainActivity.this);
+     field.setSingleLine(true);
+     field.setText(playerName);
+     field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});
+     new AlertDialog.Builder(MainActivity.this).setTitle("Dein Name").setView(field)
+      .setPositiveButton("OK",(dialog,which)->{String value=field.getText().toString().trim();if(!value.isEmpty())playerName=value;invalidate();})
+      .setNegativeButton("Abbrechen",null).show();
+    }
+    if(hit(x,y,585,440,170,55))playing=true;
    }else{
     if(hit(x,y,85,397,52,38))move(0,-1);
     if(hit(x,y,25,438,52,38))move(-1,0);
