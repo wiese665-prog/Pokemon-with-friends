@@ -1,6 +1,5 @@
 name: Android APK bauen
 on:
-  pull_request:
   workflow_dispatch:
   push:
     paths:
@@ -32,9 +31,7 @@ jobs:
         run: gradle --no-daemon assembleDebug
       - name: Include signing tool for private asset packaging
         run: |
-          signer=$(rg --files "$ANDROID_HOME/build-tools" | rg '/lib/apksigner.jar$' | sort -V | tail -1)
-          test -n "$signer"
-          cp "$signer" app/build/outputs/apk/debug/apksigner.jar
+          python -c 'import os,glob,shutil; paths=glob.glob(os.path.join(os.environ["ANDROID_HOME"],"build-tools","*","lib","apksigner.jar")); assert paths, "Android APK signer not found"; shutil.copyfile(sorted(paths)[-1],"app/build/outputs/apk/debug/apksigner.jar")' 
       - uses: actions/upload-artifact@v4
         with:
           name: Pokemon-with-friends-debug-APK
