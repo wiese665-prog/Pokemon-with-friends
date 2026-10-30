@@ -167,7 +167,8 @@ public class MainActivity extends Activity {
         void drawWorld(Canvas c){
             float worldX=drawX*16-248,worldZ=drawY*16-248;
             float imageX=pack.originX+worldX*2,imageY=pack.originY+(.8f*worldZ-.6f*16)*2;
-            float offsetX=480-imageX,offsetY=280-imageY;
+            float offsetX=Math.max(960-pack.width,Math.min(0,480-imageX));
+            float offsetY=Math.max(540-pack.height,Math.min(0,280-imageY));
             c.save();c.translate(offsetX,offsetY);paint.setFilterBitmap(false);c.drawBitmap(pack.background,0,0,paint);
             int frame=moving?((SystemClock.uptimeMillis()-stepStart)<75?1:(step==0?2:3)):0;
             drawMaskedPlayer(c,imageX,imageY,.6f*worldZ+.8f*16,frame);
