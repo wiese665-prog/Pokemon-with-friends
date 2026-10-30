@@ -71,9 +71,9 @@ public class MainActivity extends Activity {
     box(c,282,150,176,221,0xffe3ac55);
     box(c,502,150,176,221,0xffe3ac55);
     p.setFilterBitmap(false);
-    if(portraits[0]!=null)c.drawBitmap(portraits[0],null,new Rect(312,161,430,350),p);
+    if(portraits[0]!=null)c.drawBitmap(portraits[0],null,new Rect(337,194,403,322),p);
     else person(c,370,310,4);
-    if(portraits[1]!=null)c.drawBitmap(portraits[1],null,new Rect(532,161,650,350),p);
+    if(portraits[1]!=null)c.drawBitmap(portraits[1],null,new Rect(557,194,623,322),p);
     else person(c,590,310,4);
     text(c,"JUNGE",370,370,20);text(c,"MAeDCHEN",590,370,20);
     text(c,"NAME: "+playerName,480,423,20);
@@ -86,7 +86,12 @@ public class MainActivity extends Activity {
      if(t=='T'){p.setColor(0xff21663a);c.drawCircle(xx+16,yy+15,14,p);}
      if(t=='H'){box(c,xx,yy,32,10,0xffbe625c);box(c,xx+9,yy+17,14,12,0xff688397);}
     }
-    person(c,px*32+16,py*32+16,2);c.restore();
+    if(portraits[avatar]!=null){
+     p.setFilterBitmap(false);
+     float cx=px*32+16f,cy=py*32+16f;
+     c.drawBitmap(portraits[avatar],null,new RectF(cx-12,cy-22,cx+12,cy+18),p);
+    }else person(c,px*32+16,py*32+16,1);
+    c.restore();
     text(c,"NEUBORKIA – PROTOTYP",500,44,22);
     button(c,85,397,52,38,"▲");button(c,25,438,52,38,"◀");
     button(c,145,438,52,38,"▶");button(c,85,480,52,38,"▼");
