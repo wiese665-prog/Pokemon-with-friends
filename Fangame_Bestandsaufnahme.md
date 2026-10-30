@@ -27,3 +27,7 @@ Eine ROM-Datei enthält zwar gepackte Spieldaten, stellt aber **keine sofort ver
 **Ergebnis:** Vollständigkeit für ein Fangame noch nicht bestätigt. Nur Dateinamen, Größen und Header der beiden lokal bereitgestellten Archive sowie Dateilisten auf GitHub wurden geprüft. Dies ist keine vollständige Extraktion oder Validierung aller Spielressourcen.
 
 Original-ROM-Dateien und Nintendo-/Pokémon-Grafiken oder Tondateien nicht ohne entsprechende Rechte in ein öffentliches Repository hochladen.
+
+## Implementiert am 31.10.2026
+
+Die hier angehängte deutsche HeartGold-ROM wurde für einen privaten Neuborkia-Datenimport verwendet. `tools/import_heartgold.py` liest Kartenblock 0, Texturset 2, 17 platzierte Modelle und acht animierte Trainer aus der ROM. Die Android-App importiert das private Datenpaket und verwendet Original-Kollisionsdaten, eine vorgerenderte Kartenansicht sowie eine Tiefenkarte für verdeckte Figuren. ROM und extrahierte Daten sind nicht Bestandteil des öffentlichen Quellcodes. Vollständige 3D-Laufzeitdarstellung, Story, Kämpfe, Innenräume und Mehrspieler sind weiterhin nicht implementiert.

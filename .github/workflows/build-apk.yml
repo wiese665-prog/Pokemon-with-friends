@@ -1,9 +1,11 @@
 name: Android APK bauen
 on:
+  pull_request:
   workflow_dispatch:
   push:
     paths:
       - 'app/**'
+      - 'tools/**'
       - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
@@ -22,6 +24,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Verify Nitro importer
+        run: |
+          python -m pip install numpy pillow
+          python -m unittest discover -s tools -p 'test_*.py'
       - name: Build APK
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4

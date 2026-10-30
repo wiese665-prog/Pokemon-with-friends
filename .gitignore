@@ -1,0 +1,8 @@
+.gradle/
+**/build/
+local.properties
+__pycache__/
+*.pyc
+*.nds
+*.pwf.zip
+app/src/main/assets/town.pwf.zip

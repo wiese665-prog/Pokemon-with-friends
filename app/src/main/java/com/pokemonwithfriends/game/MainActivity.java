@@ -1,141 +1,225 @@
 package com.pokemonwithfriends.game;
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.*;
-import android.graphics.*;
-import android.app.AlertDialog;
-import android.widget.EditText;
-import android.text.InputFilter;
-import android.util.Base64;
-public class MainActivity extends Activity {
- Game game;
- @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().getDecorView().setSystemUiVisibility(5894|1024|512);game=new Game();setContentView(game);}
- @Override public boolean onKeyDown(int k,KeyEvent e){
-  if(game.playing){
-   if(k==19||k==KeyEvent.KEYCODE_W){game.move(0,-1);return true;}
-   if(k==20||k==KeyEvent.KEYCODE_S){game.move(0,1);return true;}
-   if(k==21||k==KeyEvent.KEYCODE_A){game.move(-1,0);return true;}
-   if(k==22||k==KeyEvent.KEYCODE_D){game.move(1,0);return true;}
-  }
-  return super.onKeyDown(k,e);
- }
- class Game extends View {
-  Paint p=new Paint(3);boolean playing=false;
-  Bitmap[] portraits=new Bitmap[2];
-  int direction=0, walkFrame=0;
-  Bitmap[] walkers=new Bitmap[2];
 
-  int avatar=0,outfit=0,px=10,py=10;
-  String playerName="GOLD";
-  int[] colors={0xff4f78d8,0xffe85a73,0xff49a989,0xffba79df};
-  String[] map={
-   "TTTTTTTTTTTTTTTTTTTT",
-   "TTTGGGGGGGGGGGGGGTTT",
-   "TTGGGGGGGGGGGGGGGGTT",
-   "TGGGGGHHHGGGGHHHGGGT",
-   "TGGGGGHHHGGGGHHHGGGT",
-   "TGGGGGHHHGGGGHHHGGGT",
-   "TGGGGGGPGGGGGGPGGGGT",
-   "TGGGGGGPPPPPPPPGGGGT",
-   "TGGGGGGPPPPPPPPGGGGT",
-   "TGGGGGGPGGGGGGPGGGGT",
-   "TGGGGGGPGGGGGGPGGGGT",
-   "TGGHHHGPGGGGGGPGGGGT",
-   "TGGHHHGPGGGGGGPGGGGT",
-   "TGGHHHGGGGGGGGGGGGGT",
-   "TTGGGGGGGGGGGGGGGGTT",
-   "TTTTTTTTTTTTTTTTTTTT"};
-  Game(){super(MainActivity.this);
-   try {String[] names={"boy.png.base64","girl.png.base64"};for(int i=0;i<2;i++){
-    java.io.InputStream stream=getAssets().open(names[i]);
-    java.io.ByteArrayOutputStream buf=new java.io.ByteArrayOutputStream();byte[] tmp=new byte[4096];int n;
-    while((n=stream.read(tmp))!=-1)buf.write(tmp,0,n);stream.close();
-    byte[] bytes=Base64.decode(buf.toByteArray(),Base64.DEFAULT);
-    portraits[i]=BitmapFactory.decodeByteArray(bytes,0,bytes.length);
-   }}catch(Exception e){android.util.Log.e("PWF","Portraits not loaded",e);}
-   String[] sheets={"gold_walk.png","lyra_walk.png"};
-   for(int i=0;i<2;i++)try(java.io.InputStream stream=getAssets().open(sheets[i])){
-     walkers[i]=BitmapFactory.decodeStream(stream);
-   }catch(Exception e){android.util.Log.i("PWF","Sprite sheet not imported: "+sheets[i]);}
-  }
-  void box(Canvas c,float x,float y,float w,float h,int clr){p.setColor(clr);c.drawRect(x,y,x+w,y+h,p);}
-  void text(Canvas c,String s,int x,int y,int size){p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextSize(size);p.setTextAlign(Paint.Align.CENTER);p.setColor(Color.WHITE);c.drawText(s,x,y,p);}
-  void button(Canvas c,int x,int y,int w,int h,String name){box(c,x,y,w,h,0xff3866ad);text(c,name,x+w/2,y+h/2+7,18);}
-  void person(Canvas c,float x,float y,int scale){
-   box(c,x-6*scale,y+4*scale,5*scale,10*scale,0xff283d60);box(c,x+scale,y+4*scale,5*scale,10*scale,0xff283d60);
-   box(c,x-8*scale,y-7*scale,16*scale,14*scale,avatar==0?0xffd84040:0xffd85b88);
-   box(c,x-7*scale,y-21*scale,14*scale,15*scale,0xffefc29f);
-   box(c,x-9*scale,y-24*scale,18*scale,6*scale,avatar==0?0xffdc2929:0xffef7197);
-  }
-  @Override public void onDraw(Canvas c){
-   c.save();c.scale(getWidth()/960f,getHeight()/540f);
-   box(c,0,0,960,540,0xff1b283b);
-   if(!playing){
-    text(c,"POKEMON WITH FRIENDS",480,80,36);
-    text(c,"WAeHLE DEINE FIGUR",480,118,26);
-    box(c,275,143,190,235,avatar==0?0xffe85b5b:0xffd0a349);
-    box(c,495,143,190,235,avatar==1?0xffe85b5b:0xffd0a349);
-    box(c,282,150,176,221,0xffe3ac55);
-    box(c,502,150,176,221,0xffe3ac55);
-    p.setFilterBitmap(false);
-    if(portraits[0]!=null)c.drawBitmap(portraits[0],null,new Rect(337,194,403,322),p);
-    else person(c,370,310,4);
-    if(portraits[1]!=null)c.drawBitmap(portraits[1],null,new Rect(557,194,623,322),p);
-    else person(c,590,310,4);
-    text(c,"JUNGE",370,370,20);text(c,"MAeDCHEN",590,370,20);
-    text(c,"NAME: "+playerName,480,423,20);
-    button(c,310,444,155,55,"NAME");button(c,505,444,155,55,"START");
-   }else{
-    c.save();c.translate(160,12);c.scale(.8f,.8f);
-    for(int y=0;y<16;y++)for(int x=0;x<20;x++){
-     char t=map[y].charAt(x);int xx=x*32,yy=y*32;
-     box(c,xx,yy,32,32,t=='T'?0xff39734b:t=='P'?0xffd4caab:t=='H'?0xffd9bd86:0xff8cc76c);
-     if(t=='T'){p.setColor(0xff21663a);c.drawCircle(xx+16,yy+15,14,p);}
-     if(t=='H'){box(c,xx,yy,32,10,0xffbe625c);box(c,xx+9,yy+17,14,12,0xff688397);}
+import android.app.*;
+import android.content.*;
+import android.graphics.*;
+import android.net.Uri;
+import android.os.*;
+import android.text.InputFilter;
+import android.view.*;
+import android.widget.EditText;
+import java.io.*;
+import java.util.HashSet;
+
+public class MainActivity extends Activity {
+    private static final int PICK_PACK=7;
+    private Game game;
+    private TownPack pack;
+    private volatile boolean loading;
+    private String loadError="";
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().getDecorView().setSystemUiVisibility(5894|1024|512);
+        game=new Game(); setContentView(game);
+        File installed=new File(getFilesDir(),"town.pwf.zip");
+        if(installed.exists()) loadPack(null,installed);
+        else {
+            try { getAssets().open("town.pwf.zip").close(); loadPack(null,null); }
+            catch(IOException ignored) { /* Public builds import the private pack once. */ }
+        }
     }
-    float cx=px*32+16f,cy=py*32+16f;
-    Bitmap sheet=walkers[avatar];
-    if(sheet!=null && sheet.getWidth()>=3 && sheet.getHeight()>=4){
-     int fw=sheet.getWidth()/3,fh=sheet.getHeight()/4;
-     p.setFilterBitmap(false);
-     c.drawBitmap(sheet,new Rect((walkFrame%3)*fw,direction*fh,(walkFrame%3+1)*fw,(direction+1)*fh),new RectF(cx-16,cy-24,cx+16,cy+16),p);
-    }else person(c,cx,cy,1);
-    c.restore();
-    text(c,"NEUBORKIA – PROTOTYP",500,44,22);
-    button(c,85,397,52,38,"▲");button(c,25,438,52,38,"◀");
-    button(c,145,438,52,38,"▶");button(c,85,480,52,38,"▼");
-    text(c,"WASD / PFEILTASTEN",800,505,17);
-   }
-   c.restore();
-  }
-  void move(int dx,int dy){
-   direction=dy>0?0:dy<0?1:dx<0?2:3;
-   int nx=px+dx,ny=py+dy;
-   if(nx>=0&&ny>=0&&ny<map.length&&nx<map[ny].length()&&map[ny].charAt(nx)!='H'&&map[ny].charAt(nx)!='T'){px=nx;py=ny;walkFrame=(walkFrame+1)%3;}invalidate();}
-  boolean hit(float x,float y,int bx,int by,int w,int h){return x>=bx&&x<=bx+w&&y>=by&&y<=by+h;}
-  @Override public boolean onTouchEvent(MotionEvent e){
-   if(e.getAction()!=MotionEvent.ACTION_DOWN)return true;
-   float x=e.getX()*960/getWidth(),y=e.getY()*540/getHeight();
-   if(!playing){
-    if(hit(x,y,275,143,190,235))avatar=0;
-    if(hit(x,y,495,143,190,235))avatar=1;
-    if(hit(x,y,310,444,155,55)){
-     EditText field=new EditText(MainActivity.this);
-     field.setSingleLine(true);
-     field.setText(playerName);
-     field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});
-     new AlertDialog.Builder(MainActivity.this).setTitle("Dein Name").setView(field)
-      .setPositiveButton("OK",(dialog,which)->{String value=field.getText().toString().trim();if(!value.isEmpty())playerName=value;invalidate();})
-      .setNegativeButton("Abbrechen",null).show();
+    private void choosePack() {
+        if(loading)return;
+        Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("*/*");
+        startActivityForResult(intent,PICK_PACK);
     }
-    if(hit(x,y,505,444,155,55))playing=true;
-   }else{
-    if(hit(x,y,85,397,52,38))move(0,-1);
-    if(hit(x,y,25,438,52,38))move(-1,0);
-    if(hit(x,y,145,438,52,38))move(1,0);
-    if(hit(x,y,85,480,52,38))move(0,1);
-   }
-   invalidate();return true;
-  }
- }
+    @Override protected void onActivityResult(int request,int result,Intent data) {
+        super.onActivityResult(request,result,data);
+        if(request==PICK_PACK && result==RESULT_OK && data!=null && data.getData()!=null)loadPack(data.getData(),null);
+    }
+    private void loadPack(Uri uri,File existing) {
+        loading=true;loadError="";game.clearInput();game.invalidate();
+        new Thread(()->{
+            File temp=new File(getFilesDir(),"town-import.tmp");
+            try {
+                TownPack next;
+                if(uri!=null) {
+                    try(InputStream in=getContentResolver().openInputStream(uri);OutputStream out=new FileOutputStream(temp)) {
+                        if(in==null)throw new IOException("Datei kann nicht geöffnet werden");
+                        byte[] buffer=new byte[8192];int n,total=0;
+                        while((n=in.read(buffer))!=-1) {
+                            total+=n;if(total>TownPack.MAX_PACK_BYTES)throw new IOException("Paket ist zu groß");out.write(buffer,0,n);
+                        }
+                    }
+                    next=new TownPack(new FileInputStream(temp));
+                    if(!temp.renameTo(new File(getFilesDir(),"town.pwf.zip")))throw new IOException("Paket kann nicht gespeichert werden");
+                } else next=new TownPack(existing!=null?new FileInputStream(existing):getAssets().open("town.pwf.zip"));
+                runOnUiThread(()->{pack=next;loading=false;game.onPackLoaded();});
+            } catch(Exception error) {
+                temp.delete();
+                runOnUiThread(()->{loading=false;loadError=error.getMessage()==null?"Import fehlgeschlagen":error.getMessage();game.invalidate();
+                    new AlertDialog.Builder(this).setTitle("Import fehlgeschlagen").setMessage(loadError+"\nBitte das vorbereitete .pwf.zip-Paket auswählen.").setPositiveButton("OK",null).show();});
+            }
+        },"HeartGold-import").start();
+    }
+    @Override public boolean onKeyDown(int key,KeyEvent event) {
+        if(game.key(key,true))return true;return super.onKeyDown(key,event);
+    }
+    @Override public boolean onKeyUp(int key,KeyEvent event) {
+        if(game.key(key,false))return true;return super.onKeyUp(key,event);
+    }
+    @Override public void onBackPressed() {
+        if(game.playing){game.playing=false;game.clearInput();game.invalidate();}else super.onBackPressed();
+    }
+    @Override protected void onPause(){super.onPause();game.pause();}
+    @Override protected void onResume(){super.onResume();game.resume();}
+    @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(!focus&&game!=null)game.clearInput();}
+
+    final class Game extends View {
+        final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+        final Handler handler=new Handler(Looper.getMainLooper());
+        final HashSet<Integer> pressed=new HashSet<>();
+        final Bitmap playerImage=Bitmap.createBitmap(64,64,Bitmap.Config.ARGB_8888);
+        final int[] masked=new int[4096],framePixels=new int[1024];
+        boolean playing=false,hasSpawned=false,active=false;
+        int avatar=0,direction=0,step=0,px=23,py=13,touchDir=-1;
+        float drawX=23,drawY=13,fromX=23,fromY=13;
+        long stepStart=0;boolean moving=false;
+        String playerName;
+        float viewScale=1,viewLeft=0,viewTop=0;
+        Game(){super(MainActivity.this);setFocusableInTouchMode(true);playerName=getPreferences(0).getString("name","GOLD");avatar=getPreferences(0).getInt("avatar",0);}
+        void onPackLoaded(){avatar=Math.max(0,Math.min(avatar,pack.sheets.length-1));playing=false;hasSpawned=false;clearInput();invalidate();}
+        void resume(){if(!active){active=true;handler.post(tick);}}
+        void pause(){active=false;handler.removeCallbacks(tick);clearInput();getPreferences(0).edit().putString("name",playerName).putInt("avatar",avatar).apply();}
+        void clearInput(){pressed.clear();touchDir=-1;}
+        final Runnable tick=new Runnable(){public void run(){
+            if(!active)return;
+            long now=SystemClock.uptimeMillis();
+            if(playing&&pack!=null&&!loading){
+                if(moving){float t=Math.min(1,(now-stepStart)/150f);drawX=fromX+(px-fromX)*t;drawY=fromY+(py-fromY)*t;if(t>=1)moving=false;}
+                int dir=inputDirection();
+                if(!moving&&dir>=0){direction=dir;int dx=dir==2?-1:dir==3?1:0;int dy=dir==1?-1:dir==0?1:0;
+                    if(pack.walkable(px+dx,py+dy)){fromX=px;fromY=py;px+=dx;py+=dy;stepStart=now;moving=true;step=(step+1)%2;}
+                }
+                invalidate();
+            }
+            handler.postDelayed(this,16);
+        }};
+        int keyDir(int key){
+            if(key==KeyEvent.KEYCODE_S||key==KeyEvent.KEYCODE_DPAD_DOWN)return 0;
+            if(key==KeyEvent.KEYCODE_W||key==KeyEvent.KEYCODE_DPAD_UP)return 1;
+            if(key==KeyEvent.KEYCODE_A||key==KeyEvent.KEYCODE_DPAD_LEFT)return 2;
+            if(key==KeyEvent.KEYCODE_D||key==KeyEvent.KEYCODE_DPAD_RIGHT)return 3;return -1;
+        }
+        boolean key(int key,boolean down){if(!playing)return false;int dir=keyDir(key);if(dir<0)return false;if(down)pressed.add(key);else pressed.remove(key);return true;}
+        int inputDirection(){if(touchDir>=0)return touchDir;for(int key:new int[]{KeyEvent.KEYCODE_W,KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_S,KeyEvent.KEYCODE_DPAD_DOWN,KeyEvent.KEYCODE_A,KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.KEYCODE_D,KeyEvent.KEYCODE_DPAD_RIGHT})if(pressed.contains(key))return keyDir(key);return -1;}
+        void start(){
+            if(pack==null||loading)return;
+            if(!hasSpawned){px=pack.spawnX;py=pack.spawnY;drawX=fromX=px;drawY=fromY=py;moving=false;hasSpawned=true;direction=0;}
+            clearInput();playing=true;getPreferences(0).edit().putString("name",playerName).putInt("avatar",avatar).apply();invalidate();
+        }
+        void rect(Canvas c,float x,float y,float w,float h,int color,float radius){paint.setColor(color);c.drawRoundRect(x,y,x+w,y+h,radius,radius,paint);}
+        void text(Canvas c,String value,float x,float y,float size,int color,boolean bold){paint.setColor(color);paint.setTextSize(size);paint.setTypeface(bold?Typeface.DEFAULT_BOLD:Typeface.DEFAULT);paint.setTextAlign(Paint.Align.LEFT);c.drawText(value,x,y,paint);}
+        void button(Canvas c,float x,float y,float w,float h,String label,int color){rect(c,x,y,w,h,color,12);paint.setTypeface(Typeface.DEFAULT_BOLD);paint.setTextSize(16);paint.setTextAlign(Paint.Align.CENTER);paint.setColor(Color.WHITE);c.drawText(label,x+w/2,y+h/2+6,paint);}
+        void sprite(Canvas c,int avatar,int frame,int dir,float x,float y,float size){paint.setFilterBitmap(false);c.drawBitmap(pack.sheets[avatar],new Rect(frame*32,dir*32,frame*32+32,dir*32+32),new RectF(x,y,x+size,y+size),paint);}
+        @Override protected void onDraw(Canvas c){
+            super.onDraw(c);viewScale=Math.min(getWidth()/960f,getHeight()/540f);viewLeft=(getWidth()-960*viewScale)/2;viewTop=(getHeight()-540*viewScale)/2;
+            c.drawColor(0xff101c1c);c.save();c.translate(viewLeft,viewTop);c.scale(viewScale,viewScale);c.clipRect(0,0,960,540);
+            if(playing&&pack!=null)drawWorld(c);else drawSelection(c);
+            if(loading){rect(c,0,0,960,540,0xdd102421,0);text(c,"Neuborkia wird geladen …",290,280,25,Color.WHITE,true);}
+            c.restore();
+        }
+        void drawSelection(Canvas c){
+            rect(c,0,0,960,540,0xff102823,0);
+            text(c,"POKÉMON WITH FRIENDS",38,45,17,0xff8db8a1,true);
+            text(c,"Dein Abenteuer in Neuborkia",38,88,32,0xfff3f2df,true);
+            text(c,"Wähle deinen Trainer und erkunde die HeartGold-Karte.",39,117,16,0xffb3c8bd,false);
+            if(pack==null){
+                rect(c,38,150,884,270,0xff1c3931,18);
+                text(c,"HEARTGOLD · DEUTSCHE EDITION",68,192,14,0xffb9d581,true);
+                text(c,"Neuborkia wartet auf dich.",68,240,29,Color.WHITE,true);
+                text(c,"Importiere das vorbereitete HeartGold-Neuborkia.pwf.zip-Paket.",68,280,18,0xffd3e1d8,false);
+                text(c,"Danach stehen Karte und acht laufende Trainer offline bereit.",68,310,18,0xffd3e1d8,false);
+                button(c,68,344,310,50,"HEARTGOLD-PAKET IMPORTIEREN",0xff477758);
+                text(c,"Die .nds-Datei wird mit tools/import_heartgold.py umgewandelt.",39,461,15,0xff9bb5a5,false);
+                return;
+            }
+            for(int i=0;i<pack.sheets.length;i++){
+                int col=i%4,row=i/4;float x=38+col*154,y=144+row*158;
+                rect(c,x,y,142,146,i==avatar?0xffb5ce78:0xff2c4940,14);
+                rect(c,x+3,y+3,136,140,i==avatar?0xff395d44:0xff1c3931,12);
+                sprite(c,i,0,0,x+35,y+8,72);
+                text(c,pack.names[i],x+13,y+108,18,Color.WHITE,true);
+                text(c,pack.roles[i],x+13,y+130,12,0xffadc7b5,false);
+            }
+            rect(c,678,144,244,304,0xff223e34,18);
+            text(c,"DEIN TRAINER",702,177,12,0xffb7cd8f,true);
+            sprite(c,avatar,0,0,716,186,160);
+            text(c,pack.names[avatar],702,367,25,Color.WHITE,true);
+            text(c,"Name: "+playerName,702,396,16,0xffcedbce,false);
+            button(c,700,411,200,26,"NAMEN ÄNDERN",0xff3c5d4c);
+            text(c,"8 Trainer · Neuborkia · offline",39,488,14,0xffa7c1ae,false);
+            button(c,38,504,220,28,"PAKET WECHSELN",0xff314e40);
+            button(c,678,465,244,55,hasSpawned?"WEITER ERKUNDEN  ›":"IN NEUBORKIA STARTEN  ›",0xff5c8050);
+        }
+        void drawWorld(Canvas c){
+            float worldX=drawX*16-248,worldZ=drawY*16-248;
+            float imageX=pack.originX+worldX*2,imageY=pack.originY+(.8f*worldZ-.6f*16)*2;
+            float offsetX=480-imageX,offsetY=280-imageY;
+            c.save();c.translate(offsetX,offsetY);paint.setFilterBitmap(false);c.drawBitmap(pack.background,0,0,paint);
+            int frame=moving?((SystemClock.uptimeMillis()-stepStart)<75?1:(step==0?2:3)):0;
+            drawMaskedPlayer(c,imageX,imageY,.6f*worldZ+.8f*16,frame);
+            c.restore();
+            rect(c,24,18,284,68,0xe8102823,14);text(c,"NEUBORKIA",42,46,21,0xfff5f3df,true);text(c,playerName+"  ·  "+pack.names[avatar],42,69,14,0xffb9d098,false);
+            button(c,790,22,146,44,"TRAINER",0xdd294e3c);
+            button(c,83,350,60,52,"▲",touchDir==1?0xff789b5f:0xcc183b30);
+            button(c,20,407,60,52,"◀",touchDir==2?0xff789b5f:0xcc183b30);
+            button(c,146,407,60,52,"▶",touchDir==3?0xff789b5f:0xcc183b30);
+            button(c,83,464,60,52,"▼",touchDir==0?0xff789b5f:0xcc183b30);
+            rect(c,651,481,285,37,0xdd102823,10);text(c,"WASD / Pfeiltasten · Halten zum Laufen",665,505,13,0xffcfddc6,false);
+        }
+        void drawMaskedPlayer(Canvas c,float fx,float fy,float depth,int frame){
+            pack.sheets[avatar].getPixels(framePixels,0,32,frame*32,direction*32,32,32);
+            int left=Math.round(fx-32),top=Math.round(fy-56);
+            for(int y=0;y<64;y++)for(int x=0;x<64;x++){
+                int color=framePixels[(y/2)*32+x/2],mx=left+x,my=top+y;
+                if(mx>=0&&my>=0&&mx<pack.width&&my<pack.height){
+                    float scene=((pack.depth[my*pack.width+mx]&65535)-32768)/64f;
+                    if(scene>depth+1.5f)color=Color.TRANSPARENT;
+                }
+                masked[y*64+x]=color;
+            }
+            playerImage.setPixels(masked,0,64,0,0,64,64);c.drawBitmap(playerImage,left,top,paint);
+        }
+        boolean hit(float x,float y,int bx,int by,int w,int h){return x>=bx&&x<bx+w&&y>=by&&y<by+h;}
+        int touchDirection(float x,float y){if(hit(x,y,83,350,60,52))return 1;if(hit(x,y,20,407,60,52))return 2;if(hit(x,y,146,407,60,52))return 3;if(hit(x,y,83,464,60,52))return 0;return -1;}
+        @Override public boolean onTouchEvent(MotionEvent event){
+            if(viewScale<=0)return true;
+            float x=(event.getX()-viewLeft)/viewScale,y=(event.getY()-viewTop)/viewScale;
+            int action=event.getActionMasked();
+            if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){touchDir=-1;invalidate();return true;}
+            if(loading)return true;
+            if(playing){
+                touchDir=touchDirection(x,y);
+                if(action==MotionEvent.ACTION_DOWN&&hit(x,y,790,22,146,44)){playing=false;clearInput();}
+            }else if(action==MotionEvent.ACTION_DOWN){
+                if(pack==null){if(hit(x,y,68,344,310,50))choosePack();}
+                else {
+                    for(int i=0;i<pack.sheets.length;i++)if(hit(x,y,38+(i%4)*154,144+(i/4)*158,142,146))avatar=i;
+                    if(hit(x,y,678,465,244,55))start();
+                    if(hit(x,y,38,504,220,28))choosePack();
+                    if(hit(x,y,700,411,200,26))editName();
+                }
+            }
+            invalidate();return true;
+        }
+        void editName(){
+            EditText field=new EditText(MainActivity.this);field.setSingleLine(true);field.setText(playerName);field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});
+            new AlertDialog.Builder(MainActivity.this).setTitle("Dein Trainername").setView(field).setPositiveButton("Speichern",(dialog,which)->{
+                String value=field.getText().toString().trim();if(!value.isEmpty())playerName=value;invalidate();
+            }).setNegativeButton("Abbrechen",null).show();
+        }
+    }
 }
