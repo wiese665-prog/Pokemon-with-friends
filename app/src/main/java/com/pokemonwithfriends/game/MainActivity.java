@@ -6,6 +6,7 @@ import android.graphics.*;
 import android.app.AlertDialog;
 import android.widget.EditText;
 import android.text.InputFilter;
+import android.util.Base64;
 public class MainActivity extends Activity {
  Game game;
  @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().getDecorView().setSystemUiVisibility(5894|1024|512);game=new Game();setContentView(game);}
@@ -20,6 +21,7 @@ public class MainActivity extends Activity {
  }
  class Game extends View {
   Paint p=new Paint(3);boolean playing=false;
+  Bitmap[] portraits=new Bitmap[2];
   int avatar=0,outfit=0,px=10,py=10;
   String playerName="GOLD";
   int[] colors={0xff4f78d8,0xffe85a73,0xff49a989,0xffba79df};
@@ -40,7 +42,15 @@ public class MainActivity extends Activity {
    "TGGHHHGGGGGGGGGGGGGT",
    "TTGGGGGGGGGGGGGGGGTT",
    "TTTTTTTTTTTTTTTTTTTT"};
-  Game(){super(MainActivity.this);}
+  Game(){super(MainActivity.this);
+   try {String[] names={"boy.png.base64","girl.png.base64"};for(int i=0;i<2;i++){
+    java.io.InputStream stream=getAssets().open(names[i]);
+    java.io.ByteArrayOutputStream buf=new java.io.ByteArrayOutputStream();byte[] tmp=new byte[4096];int n;
+    while((n=stream.read(tmp))!=-1)buf.write(tmp,0,n);stream.close();
+    byte[] bytes=Base64.decode(buf.toByteArray(),Base64.DEFAULT);
+    portraits[i]=BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+   }}catch(Exception e){android.util.Log.e("PWF","Portraits not loaded",e);}
+  }
   void box(Canvas c,float x,float y,float w,float h,int clr){p.setColor(clr);c.drawRect(x,y,x+w,y+h,p);}
   void text(Canvas c,String s,int x,int y,int size){p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextSize(size);p.setTextAlign(Paint.Align.CENTER);p.setColor(Color.WHITE);c.drawText(s,x,y,p);}
   void button(Canvas c,int x,int y,int w,int h,String name){box(c,x,y,w,h,0xff3866ad);text(c,name,x+w/2,y+h/2+7,18);}
@@ -55,13 +65,19 @@ public class MainActivity extends Activity {
    box(c,0,0,960,540,0xff1b283b);
    if(!playing){
     text(c,"POKEMON WITH FRIENDS",480,80,36);
-    text(c,"WAeHLE DEINE FIGUR",480,125,22);
-    box(c,335,145,290,205,0xff7dbe8f);person(c,480,275,5);
-    text(c,avatar==0?"JUNGE":"MAeDCHEN",480,370,22);
-    text(c,"NAME: "+playerName,480,412,20);
-    button(c,205,440,170,55,"FIGUR");
-    button(c,395,440,170,55,"NAME");
-    button(c,585,440,170,55,"START");
+    text(c,"WAeHLE DEINE FIGUR",480,118,26);
+    box(c,275,143,190,235,avatar==0?0xffe85b5b:0xffd0a349);
+    box(c,495,143,190,235,avatar==1?0xffe85b5b:0xffd0a349);
+    box(c,282,150,176,221,0xffe3ac55);
+    box(c,502,150,176,221,0xffe3ac55);
+    p.setFilterBitmap(false);
+    if(portraits[0]!=null)c.drawBitmap(portraits[0],null,new Rect(312,161,430,350),p);
+    else person(c,370,310,4);
+    if(portraits[1]!=null)c.drawBitmap(portraits[1],null,new Rect(532,161,650,350),p);
+    else person(c,590,310,4);
+    text(c,"JUNGE",370,370,20);text(c,"MAeDCHEN",590,370,20);
+    text(c,"NAME: "+playerName,480,423,20);
+    button(c,310,444,155,55,"NAME");button(c,505,444,155,55,"START");
    }else{
     c.save();c.translate(160,12);c.scale(.8f,.8f);
     for(int y=0;y<16;y++)for(int x=0;x<20;x++){
@@ -85,8 +101,9 @@ public class MainActivity extends Activity {
    if(e.getAction()!=MotionEvent.ACTION_DOWN)return true;
    float x=e.getX()*960/getWidth(),y=e.getY()*540/getHeight();
    if(!playing){
-    if(hit(x,y,205,440,170,55))avatar=1-avatar;
-    if(hit(x,y,395,440,170,55)){
+    if(hit(x,y,275,143,190,235))avatar=0;
+    if(hit(x,y,495,143,190,235))avatar=1;
+    if(hit(x,y,310,444,155,55)){
      EditText field=new EditText(MainActivity.this);
      field.setSingleLine(true);
      field.setText(playerName);
@@ -95,7 +112,7 @@ public class MainActivity extends Activity {
       .setPositiveButton("OK",(dialog,which)->{String value=field.getText().toString().trim();if(!value.isEmpty())playerName=value;invalidate();})
       .setNegativeButton("Abbrechen",null).show();
     }
-    if(hit(x,y,585,440,170,55))playing=true;
+    if(hit(x,y,505,444,155,55))playing=true;
    }else{
     if(hit(x,y,85,397,52,38))move(0,-1);
     if(hit(x,y,25,438,52,38))move(-1,0);
