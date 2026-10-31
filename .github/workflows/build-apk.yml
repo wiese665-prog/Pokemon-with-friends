@@ -9,10 +9,14 @@ on:
       - 'settings.gradle'
       - 'gradle.properties'
       - '.github/workflows/build-apk.yml'
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   apk:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +56,7 @@ jobs:
           script: |
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            adb shell am instrument -w com.pokemonwithfriends.game.test/com.pokemonwithfriends.game.SmokeInstrumentation > android-smoke.log
+            timeout 120 adb shell am instrument -w com.pokemonwithfriends.game.test/com.pokemonwithfriends.game.SmokeInstrumentation > android-smoke.log
             cat android-smoke.log
             grep -q PWF_SMOKE_OK android-smoke.log
       - name: Include signing tool for private asset packaging

@@ -12,6 +12,7 @@ import org.json.JSONArray;
 /** Actual Android WebView + Java bridge integration, with synthetic non-game data. */
 public class SmokeInstrumentation extends Instrumentation {
     private WebView web;
+    @Override public void onCreate(Bundle arguments){super.onCreate(arguments);start();}
     @Override public void onStart(){
         Bundle result=new Bundle();
         try{
