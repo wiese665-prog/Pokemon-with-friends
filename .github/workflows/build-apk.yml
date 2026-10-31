@@ -27,11 +27,37 @@ jobs:
         run: |
           python -m pip install numpy pillow
           python -m unittest discover -s tools -p 'test_*.py'
-      - name: Build APK
-        run: gradle --no-daemon assembleDebug
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify RPG rules and prepare synthetic host test
+        run: |
+          node --test tools/test_engine.cjs
+          node --check app/src/main/assets/game/game.js
+          python tools/make_smoke_pack.py
+      - name: Build APK and Android host test
+        run: gradle --no-daemon assembleDebug assembleDebugAndroidTest
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android WebView integration test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w com.pokemonwithfriends.game.test/com.pokemonwithfriends.game.SmokeInstrumentation > android-smoke.log
+            cat android-smoke.log
+            grep -q PWF_SMOKE_OK android-smoke.log
       - name: Include signing tool for private asset packaging
         run: |
-          python -c 'import os,glob,shutil; paths=glob.glob(os.path.join(os.environ["ANDROID_HOME"],"build-tools","*","lib","apksigner.jar")); assert paths, "Android APK signer not found"; shutil.copyfile(sorted(paths)[-1],"app/build/outputs/apk/debug/apksigner.jar")' 
+          python -c 'import os,glob,shutil; paths=glob.glob(os.path.join(os.environ["ANDROID_HOME"],"build-tools","*","lib","apksigner.jar")); assert paths, "Android APK signer not found"; shutil.copyfile(sorted(paths)[-1],"app/build/outputs/apk/debug/apksigner.jar")'
       - uses: actions/upload-artifact@v4
         with:
           name: Pokemon-with-friends-debug-APK

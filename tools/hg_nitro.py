@@ -72,14 +72,18 @@ def joint(b):
  return m
 
 def gx(data,scale):
- o=0;pos=np.zeros(3);uv=(0,0);color=(1,1,1);verts=[];tris=[];prim=[];mode=0
- params={0:0,0x14:1,0x20:1,0x21:1,0x22:1,0x23:2,0x24:1,0x25:1,0x26:1,0x27:1,0x28:1,0x30:1,0x40:1,0x41:0}
+ o=0;pos=np.zeros(3);transform=np.eye(4);uv=(0,0);color=(1,1,1);verts=[];tris=[];prim=[];mode=0
+ params={0:0,0x14:1,0x15:0,0x1b:3,0x1c:3,0x20:1,0x21:1,0x22:1,0x23:2,0x24:1,0x25:1,0x26:1,0x27:1,0x28:1,0x30:1,0x40:1,0x41:0}
  while o<len(data):
   cmds=data[o:o+4];o+=4
   for cmd in cmds:
    if cmd not in params:raise ValueError(f'Unsupported GX command {cmd:02x}')
    n=params[cmd];p=U32(data,o) if n else 0;o+=4*n
-   if cmd==0x20:color=tuple(c/255 for c in rgb(p))
+   if cmd in (0x14,0x15):transform=np.eye(4)
+   elif cmd==0x1b:
+    vals=np.array([i32(data,o-12+j*4)/4096 for j in range(3)]);transform[:3,:3]*=vals
+   elif cmd==0x1c:transform[:3,3]+=[i32(data,o-12+j*4)/4096 for j in range(3)]
+   elif cmd==0x20:color=tuple(c/255 for c in rgb(p))
    elif cmd==0x21:
     normal=np.array([sign((p>>s)&1023,10)/512 for s in (0,10,20)])
     # Diffuse daylight; keep original palette colors readable.
@@ -92,7 +96,7 @@ def gx(data,scale):
     elif cmd==0x28:pos+=np.array([sign((p>>s)&1023,10) for s in (0,10,20)])/4096
     else:
      a,c={0x25:(0,1),0x26:(0,2),0x27:(1,2)}[cmd];pos[a]=sign(p&65535,16)/4096;pos[c]=sign(p>>16,16)/4096
-    prim.append(len(verts));verts.append([*(pos*scale),*uv,*color])
+    prim.append(len(verts));verts.append([*((transform@np.r_[pos,1])[:3]*scale),*uv,*color])
     n=len(prim)
     if mode==0 and n%3==0:tris.append(prim[-3:])
     elif mode==1 and n%4==0:
@@ -134,5 +138,9 @@ def model(b):
   elif op==6:o+=3+bool(opt&1)+bool(opt&2)
   elif op in (7,8):o+=1+bool(opt&1)+bool(opt&2)
   elif op==11:pass
+  elif op in (12,13):o+=2
+  elif op==9:
+   # Static bind-pose snapshot: animated skinning weights are not evaluated.
+   count=b[o+1];o+=2+3*count
   else:raise ValueError(f'Unsupported SBC {op}')
  return out
