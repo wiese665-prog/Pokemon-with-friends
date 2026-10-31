@@ -1,141 +1,123 @@
 package com.pokemonwithfriends.game;
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.*;
-import android.graphics.*;
-import android.app.AlertDialog;
-import android.widget.EditText;
-import android.text.InputFilter;
-import android.util.Base64;
-public class MainActivity extends Activity {
- Game game;
- @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().getDecorView().setSystemUiVisibility(5894|1024|512);game=new Game();setContentView(game);}
- @Override public boolean onKeyDown(int k,KeyEvent e){
-  if(game.playing){
-   if(k==19||k==KeyEvent.KEYCODE_W){game.move(0,-1);return true;}
-   if(k==20||k==KeyEvent.KEYCODE_S){game.move(0,1);return true;}
-   if(k==21||k==KeyEvent.KEYCODE_A){game.move(-1,0);return true;}
-   if(k==22||k==KeyEvent.KEYCODE_D){game.move(1,0);return true;}
-  }
-  return super.onKeyDown(k,e);
- }
- class Game extends View {
-  Paint p=new Paint(3);boolean playing=false;
-  Bitmap[] portraits=new Bitmap[2];
-  int direction=0, walkFrame=0;
-  Bitmap[] walkers=new Bitmap[2];
 
-  int avatar=0,outfit=0,px=10,py=10;
-  String playerName="GOLD";
-  int[] colors={0xff4f78d8,0xffe85a73,0xff49a989,0xffba79df};
-  String[] map={
-   "TTTTTTTTTTTTTTTTTTTT",
-   "TTTGGGGGGGGGGGGGGTTT",
-   "TTGGGGGGGGGGGGGGGGTT",
-   "TGGGGGHHHGGGGHHHGGGT",
-   "TGGGGGHHHGGGGHHHGGGT",
-   "TGGGGGHHHGGGGHHHGGGT",
-   "TGGGGGGPGGGGGGPGGGGT",
-   "TGGGGGGPPPPPPPPGGGGT",
-   "TGGGGGGPPPPPPPPGGGGT",
-   "TGGGGGGPGGGGGGPGGGGT",
-   "TGGGGGGPGGGGGGPGGGGT",
-   "TGGHHHGPGGGGGGPGGGGT",
-   "TGGHHHGPGGGGGGPGGGGT",
-   "TGGHHHGGGGGGGGGGGGGT",
-   "TTGGGGGGGGGGGGGGGGTT",
-   "TTTTTTTTTTTTTTTTTTTT"};
-  Game(){super(MainActivity.this);
-   try {String[] names={"boy.png.base64","girl.png.base64"};for(int i=0;i<2;i++){
-    java.io.InputStream stream=getAssets().open(names[i]);
-    java.io.ByteArrayOutputStream buf=new java.io.ByteArrayOutputStream();byte[] tmp=new byte[4096];int n;
-    while((n=stream.read(tmp))!=-1)buf.write(tmp,0,n);stream.close();
-    byte[] bytes=Base64.decode(buf.toByteArray(),Base64.DEFAULT);
-    portraits[i]=BitmapFactory.decodeByteArray(bytes,0,bytes.length);
-   }}catch(Exception e){android.util.Log.e("PWF","Portraits not loaded",e);}
-   String[] sheets={"gold_walk.png","lyra_walk.png"};
-   for(int i=0;i<2;i++)try(java.io.InputStream stream=getAssets().open(sheets[i])){
-     walkers[i]=BitmapFactory.decodeStream(stream);
-   }catch(Exception e){android.util.Log.i("PWF","Sprite sheet not imported: "+sheets[i]);}
-  }
-  void box(Canvas c,float x,float y,float w,float h,int clr){p.setColor(clr);c.drawRect(x,y,x+w,y+h,p);}
-  void text(Canvas c,String s,int x,int y,int size){p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextSize(size);p.setTextAlign(Paint.Align.CENTER);p.setColor(Color.WHITE);c.drawText(s,x,y,p);}
-  void button(Canvas c,int x,int y,int w,int h,String name){box(c,x,y,w,h,0xff3866ad);text(c,name,x+w/2,y+h/2+7,18);}
-  void person(Canvas c,float x,float y,int scale){
-   box(c,x-6*scale,y+4*scale,5*scale,10*scale,0xff283d60);box(c,x+scale,y+4*scale,5*scale,10*scale,0xff283d60);
-   box(c,x-8*scale,y-7*scale,16*scale,14*scale,avatar==0?0xffd84040:0xffd85b88);
-   box(c,x-7*scale,y-21*scale,14*scale,15*scale,0xffefc29f);
-   box(c,x-9*scale,y-24*scale,18*scale,6*scale,avatar==0?0xffdc2929:0xffef7197);
-  }
-  @Override public void onDraw(Canvas c){
-   c.save();c.scale(getWidth()/960f,getHeight()/540f);
-   box(c,0,0,960,540,0xff1b283b);
-   if(!playing){
-    text(c,"POKEMON WITH FRIENDS",480,80,36);
-    text(c,"WAeHLE DEINE FIGUR",480,118,26);
-    box(c,275,143,190,235,avatar==0?0xffe85b5b:0xffd0a349);
-    box(c,495,143,190,235,avatar==1?0xffe85b5b:0xffd0a349);
-    box(c,282,150,176,221,0xffe3ac55);
-    box(c,502,150,176,221,0xffe3ac55);
-    p.setFilterBitmap(false);
-    if(portraits[0]!=null)c.drawBitmap(portraits[0],null,new Rect(337,194,403,322),p);
-    else person(c,370,310,4);
-    if(portraits[1]!=null)c.drawBitmap(portraits[1],null,new Rect(557,194,623,322),p);
-    else person(c,590,310,4);
-    text(c,"JUNGE",370,370,20);text(c,"MAeDCHEN",590,370,20);
-    text(c,"NAME: "+playerName,480,423,20);
-    button(c,310,444,155,55,"NAME");button(c,505,444,155,55,"START");
-   }else{
-    c.save();c.translate(160,12);c.scale(.8f,.8f);
-    for(int y=0;y<16;y++)for(int x=0;x<20;x++){
-     char t=map[y].charAt(x);int xx=x*32,yy=y*32;
-     box(c,xx,yy,32,32,t=='T'?0xff39734b:t=='P'?0xffd4caab:t=='H'?0xffd9bd86:0xff8cc76c);
-     if(t=='T'){p.setColor(0xff21663a);c.drawCircle(xx+16,yy+15,14,p);}
-     if(t=='H'){box(c,xx,yy,32,10,0xffbe625c);box(c,xx+9,yy+17,14,12,0xff688397);}
+import android.app.*;
+import android.content.*;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.AtomicFile;
+import android.webkit.*;
+import org.json.JSONObject;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.zip.*;
+
+/** Offline Android host. All requests are intercepted; the app has no network permission. */
+public class MainActivity extends Activity {
+    private WebView web;
+    private volatile ZipFile pack;
+    private volatile String packError="";
+    private String exportText="";
+    private static final int IMPORT_PACK=10,IMPORT_SAVE=11,EXPORT_SAVE=12;
+    private static final long MAX_PACK=600L*1024*1024;
+    @Override public void onCreate(Bundle state){
+        super.onCreate(state);
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().getDecorView().setSystemUiVisibility(5894|1024|512);
+        web=new WebView(this);
+        WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
+        settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setBlockNetworkLoads(true);
+        web.addJavascriptInterface(new Bridge(),"Android");
+        web.setWebChromeClient(new WebChromeClient());
+        web.setWebViewClient(new WebViewClient(){
+            @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){return true;}
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return resource(request.getUrl());}
+            @Override public void onPageFinished(WebView view,String url){if(pack!=null)view.evaluateJavascript("window.packReady&&window.packReady()",null);}
+        });
+        setContentView(web);web.loadUrl("https://pwf.local/index.html");
+        new Thread(()->{
+            try{
+                File file=new File(getFilesDir(),"world-v3.pwf.zip");
+                if(!file.exists()){
+                    try(InputStream in=getAssets().open("world.pwf.zip")){copyPack(in,file);}
+                    catch(FileNotFoundException missing){return;}
+                }
+                openPack(file);
+            }catch(Exception error){packError=error.getMessage()==null?"Datenpaket konnte nicht geladen werden":error.getMessage();}
+            runOnUiThread(()->web.evaluateJavascript("window.packReady&&window.packReady()",null));
+        },"World-pack").start();
     }
-    float cx=px*32+16f,cy=py*32+16f;
-    Bitmap sheet=walkers[avatar];
-    if(sheet!=null && sheet.getWidth()>=3 && sheet.getHeight()>=4){
-     int fw=sheet.getWidth()/3,fh=sheet.getHeight()/4;
-     p.setFilterBitmap(false);
-     c.drawBitmap(sheet,new Rect((walkFrame%3)*fw,direction*fh,(walkFrame%3+1)*fw,(direction+1)*fh),new RectF(cx-16,cy-24,cx+16,cy+16),p);
-    }else person(c,cx,cy,1);
-    c.restore();
-    text(c,"NEUBORKIA – PROTOTYP",500,44,22);
-    button(c,85,397,52,38,"▲");button(c,25,438,52,38,"◀");
-    button(c,145,438,52,38,"▶");button(c,85,480,52,38,"▼");
-    text(c,"WASD / PFEILTASTEN",800,505,17);
-   }
-   c.restore();
-  }
-  void move(int dx,int dy){
-   direction=dy>0?0:dy<0?1:dx<0?2:3;
-   int nx=px+dx,ny=py+dy;
-   if(nx>=0&&ny>=0&&ny<map.length&&nx<map[ny].length()&&map[ny].charAt(nx)!='H'&&map[ny].charAt(nx)!='T'){px=nx;py=ny;walkFrame=(walkFrame+1)%3;}invalidate();}
-  boolean hit(float x,float y,int bx,int by,int w,int h){return x>=bx&&x<=bx+w&&y>=by&&y<=by+h;}
-  @Override public boolean onTouchEvent(MotionEvent e){
-   if(e.getAction()!=MotionEvent.ACTION_DOWN)return true;
-   float x=e.getX()*960/getWidth(),y=e.getY()*540/getHeight();
-   if(!playing){
-    if(hit(x,y,275,143,190,235))avatar=0;
-    if(hit(x,y,495,143,190,235))avatar=1;
-    if(hit(x,y,310,444,155,55)){
-     EditText field=new EditText(MainActivity.this);
-     field.setSingleLine(true);
-     field.setText(playerName);
-     field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});
-     new AlertDialog.Builder(MainActivity.this).setTitle("Dein Name").setView(field)
-      .setPositiveButton("OK",(dialog,which)->{String value=field.getText().toString().trim();if(!value.isEmpty())playerName=value;invalidate();})
-      .setNegativeButton("Abbrechen",null).show();
+    private WebResourceResponse resource(Uri uri){
+        try{
+            if(!"https".equals(uri.getScheme())||!"pwf.local".equals(uri.getHost()))return missing();
+            String path=uri.getPath();if(path==null||path.contains("..")||path.contains("\\"))return missing();
+            InputStream in;
+            if(path.startsWith("/pack/")){
+                ZipFile current=pack;if(current==null)return missing();ZipEntry entry=current.getEntry(path.substring(6));if(entry==null||entry.isDirectory())return missing();in=current.getInputStream(entry);
+            }else{
+                String name=path.equals("/")?"index.html":path.substring(1);
+                if(!Arrays.asList("index.html","style.css","engine.js","game.js").contains(name))return missing();
+                in=getAssets().open("game/"+name);
+            }
+            String mime=path.endsWith(".html")?"text/html":path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":path.endsWith(".json")?"application/json":path.endsWith(".png")?"image/png":"application/octet-stream";
+            Map<String,String> headers=new HashMap<>();headers.put("Cache-Control","no-store");headers.put("X-Content-Type-Options","nosniff");headers.put("Content-Security-Policy","default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'");
+            return new WebResourceResponse(mime,mime.startsWith("text/")||mime.contains("json")||mime.contains("javascript")?"UTF-8":null,200,"OK",headers,in);
+        }catch(Exception error){return missing();}
     }
-    if(hit(x,y,505,444,155,55))playing=true;
-   }else{
-    if(hit(x,y,85,397,52,38))move(0,-1);
-    if(hit(x,y,25,438,52,38))move(-1,0);
-    if(hit(x,y,145,438,52,38))move(1,0);
-    if(hit(x,y,85,480,52,38))move(0,1);
-   }
-   invalidate();return true;
-  }
- }
+    private WebResourceResponse missing(){return new WebResourceResponse("text/plain","UTF-8",404,"Not found",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));}
+    private void validatePack(File file)throws Exception{
+        try(ZipFile zip=new ZipFile(file)){
+            if(zip.size()>6000)throw new IOException("Zu viele Paketdateien");
+            Enumeration<? extends ZipEntry> entries=zip.entries();long total=0;
+            while(entries.hasMoreElements()){
+                ZipEntry e=entries.nextElement();String name=e.getName();
+                if(name.startsWith("/")||name.contains("..")||name.contains("\\")||e.getSize()<0||e.getSize()>40L*1024*1024)throw new IOException("Ungültiges Datenpaket");
+                total+=e.getSize();if(total>4L*1024*1024*1024)throw new IOException("Datenpaket zu groß");
+            }
+            ZipEntry entry=zip.getEntry("world.json");if(entry==null)throw new IOException("Bitte das Weltpaket Version 3 verwenden");
+            String json=readText(zip.getInputStream(entry),30*1024*1024);
+            JSONObject root=new JSONObject(json);
+            if(!"pwf-heartgold-world".equals(root.getString("format"))||root.getInt("version")!=3||zip.getEntry("data.json")==null)throw new IOException("Unbekanntes Datenpaket");
+        }
+    }
+    private synchronized void openPack(File file)throws Exception{validatePack(file);ZipFile next=new ZipFile(file);ZipFile old=pack;pack=next;if(old!=null)old.close();packError="";}
+    private void copyPack(InputStream in,File destination)throws Exception{
+        File temp=new File(getFilesDir(),"world-import.tmp");
+        try(OutputStream out=new FileOutputStream(temp)){
+            byte[] buf=new byte[65536];long total=0;int n;while((n=in.read(buf))!=-1){total+=n;if(total>MAX_PACK)throw new IOException("Paket zu groß");out.write(buf,0,n);}
+        }catch(Exception error){temp.delete();throw error;}
+        validatePack(temp);if(!temp.renameTo(destination)){temp.delete();throw new IOException("Paket kann nicht gespeichert werden");}
+    }
+    private String readText(InputStream input,int limit)throws IOException{
+        try(InputStream in=input;ByteArrayOutputStream out=new ByteArrayOutputStream()){
+            byte[] buf=new byte[8192];int n;while((n=in.read(buf))!=-1){if(out.size()+n>limit)throw new IOException("Datei zu groß");out.write(buf,0,n);}return out.toString("UTF-8");
+        }
+    }
+    private void picker(int code){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");startActivityForResult(i,code);}
+    @Override protected void onActivityResult(int request,int result,Intent data){
+        super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();
+        new Thread(()->{
+            try{
+                if(request==IMPORT_PACK){try(InputStream in=getContentResolver().openInputStream(uri)){if(in==null)throw new IOException("Datei nicht lesbar");File f=new File(getFilesDir(),"world-v3.pwf.zip");copyPack(in,f);openPack(f);}runOnUiThread(()->web.reload());}
+                else if(request==IMPORT_SAVE){String text=readText(getContentResolver().openInputStream(uri),2*1024*1024);runOnUiThread(()->web.evaluateJavascript("window.receiveSave("+JSONObject.quote(text)+")",null));}
+                else if(request==EXPORT_SAVE){try(OutputStream out=getContentResolver().openOutputStream(uri)){if(out==null)throw new IOException("Zieldatei nicht schreibbar");out.write(exportText.getBytes(StandardCharsets.UTF_8));}}
+            }catch(Exception error){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Datei konnte nicht verarbeitet werden").setMessage(error.getMessage()).setPositiveButton("OK",null).show());}
+        },"File-transfer").start();
+    }
+    final class Bridge {
+        @JavascriptInterface public boolean ready(){return pack!=null;}
+        @JavascriptInterface public String error(){return packError;}
+        @JavascriptInterface public void importPack(){runOnUiThread(()->picker(IMPORT_PACK));}
+        @JavascriptInterface public String load(){try{return readText(new AtomicFile(new File(getFilesDir(),"save-v3.json")).openRead(),2*1024*1024);}catch(Exception error){return "";}}
+        @JavascriptInterface public synchronized boolean save(String json){
+            if(json.length()>2*1024*1024)return false;AtomicFile file=new AtomicFile(new File(getFilesDir(),"save-v3.json"));FileOutputStream out=null;
+            try{new JSONObject(json);out=file.startWrite();out.write(json.getBytes(StandardCharsets.UTF_8));file.finishWrite(out);return true;}catch(Exception error){if(out!=null)file.failWrite(out);return false;}
+        }
+        @JavascriptInterface public void exportSave(String json){exportText=json;runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");i.putExtra(Intent.EXTRA_TITLE,"Pokemon-with-friends-Spielstand.json");startActivityForResult(i,EXPORT_SAVE);});}
+        @JavascriptInterface public void importSave(){runOnUiThread(()->picker(IMPORT_SAVE));}
+    }
+    @Override public void onBackPressed(){web.evaluateJavascript("window.pwfBack&&window.pwfBack()",null);}
+    @Override protected void onPause(){super.onPause();if(web!=null){web.evaluateJavascript("window.pwfPause&&window.pwfPause()",null);web.onPause();}}
+    @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();}
+    @Override protected void onDestroy(){if(web!=null){web.removeJavascriptInterface("Android");web.destroy();}try{if(pack!=null)pack.close();}catch(IOException ignored){}super.onDestroy();}
 }
