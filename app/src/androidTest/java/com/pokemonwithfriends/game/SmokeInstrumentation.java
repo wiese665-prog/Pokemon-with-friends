@@ -25,7 +25,7 @@ public class SmokeInstrumentation extends Instrumentation {
             js("(document.querySelector('.card button').click(), 'ok')");waitText("Teststadt");
             require(js("String(!!document.querySelector('#world'))").equals("true"),"World canvas is missing");
             clickText("Team");waitText("Dein Team");require(js("String(document.querySelectorAll('.row').length)").equals("1"),"Starter missing");
-            clickText("Zurück");waitText("Teststadt");clickText("Menü");waitText("Dein Abenteuer");clickText("Pokécenter & Markt");waitText("Die freien Ortsdienste");clickText("Pokécenter · kostenlos heilen");waitText("Dein Team ist wieder fit");
+            clickText("Zurück");waitText("Teststadt");clickText("Menü");waitText("Dein Abenteuer");clickText("Pokécenter & Markt");waitText("Pokécenter · kostenlos heilen");clickText("Pokécenter · kostenlos heilen");waitText("Dein Team ist wieder fit");
             require(new File(getTargetContext().getFilesDir(),"save-v3.json").length()>100,"Native save bridge did not persist progress");
             result.putString("stream","PWF_SMOKE_OK: pack load, trainer/starter selection, world canvas, team, center and native save bridge passed\n");
             finish(Activity.RESULT_OK,result);

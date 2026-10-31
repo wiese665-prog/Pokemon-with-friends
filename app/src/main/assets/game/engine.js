@@ -55,10 +55,10 @@ class Game {
  sell(id,n=1){if(this.battle)throw Error('Kein Verkauf im Kampf.');const price=this.d.items[id]?.price||0;if(!price||n<1||!Number.isInteger(n)||this.quantity(id)<n)throw Error('Dieses Item kann nicht verkauft werden.');this.s.bag[id]-=n;this.s.money=Math.min(9999999,this.s.money+Math.floor(price/2)*n);this.save();}
  evolve(m,method,item=0){
   const st=this.stats(m),before=st[0];const evo=this.species(m).evolutions.find(([kind,p])=>{
-   if(method==='item')return kind===7&&p===item||item===9000&&[5,6].includes(kind);
+   if(method==='item')return kind===7&&p===item||item===9000&&(kind===5||kind===6&&m.item===p);
    return kind===4&&m.level>=p||[1,2,3].includes(kind)&&m.friendship>=220||kind===8&&m.level>=p&&st[1]>st[2]||kind===9&&m.level>=p&&st[1]<st[2]||kind===10&&m.level>=p&&st[1]===st[2]||kind===20&&m.moves.some(x=>x.id===p);
   });
-  if(!evo)return '';let old=this.name(m);m.species=evo[2];m.hp=Math.max(1,m.hp+this.stats(m)[0]-before);m.ability=this.species(m).abilities[0];this.mark(this.s.seen,m.species);this.mark(this.s.caught,m.species);return old+' entwickelt sich zu '+this.name(m)+'!';
+  if(!evo)return '';let old=this.name(m);if(evo[0]===6)m.item=0;m.species=evo[2];m.hp=Math.max(1,m.hp+this.stats(m)[0]-before);m.ability=this.species(m).abilities[0];this.mark(this.s.seen,m.species);this.mark(this.s.caught,m.species);return old+' entwickelt sich zu '+this.name(m)+'!';
  }
  item(id,index=0,moveSlot=0){
   if(!this.quantity(id))throw Error('Dieses Item hast du nicht.');let m=this.s.party[index];if(!m)throw Error('Kein Pokémon ausgewählt.');let used=false,log=[];const max=this.stats(m)[0],item=this.d.items[id];
@@ -71,7 +71,7 @@ class Game {
    if((f[5]&3)&&m.hp>0){const all=!!(f[5]&2);for(let i=0;i<m.moves.length;i++)if(all||i===moveSlot){let p=m.moves[i],n=this.maxPP(p);if(p.pp<n){p.pp=Math.min(n,p.pp+(item.pp===127?n:item.pp));used=true;}}}
   }
   if(id>=328&&id<=427){const tm=id-328,move=this.d.tmMoves?.[tm];if(!move||!this.species(m).tm.includes(tm))throw Error('Dieses Pokémon kann diese TM/VM nicht lernen.');if(m.moves.some(x=>x.id===move))throw Error('Attacke bereits gelernt.');let p={id:move,pp:this.d.moves[move].pp,ups:0};if(m.moves.length<4)m.moves.push(p);else m.moves[clamp(moveSlot,0,3)]=p;used=true;log.push(this.d.moves[move].name+' wurde gelernt.');}
-  if(!used)throw Error('Dieses Item hat hier keine Wirkung.');this.s.bag[id]--;log.push(this.itemName(id)+' eingesetzt.');this.save();return log;
+  if(!used)throw Error('Dieses Item hat hier keine Wirkung.');if(id<420||id>427)this.s.bag[id]--;log.push(this.itemName(id)+' eingesetzt.');this.save();return log;
  }
  equip(id,index){if(id===9000||!this.d.items[id]||!this.s.party[index])throw Error('Dieses Item kann nicht getragen werden.');if(!this.quantity(id))throw Error('Item fehlt.');const m=this.s.party[index];if(m.item){if(this.quantity(m.item)>=999)throw Error('Beutel ist voll.');this.s.bag[m.item]=this.quantity(m.item)+1;}m.item=id;this.s.bag[id]--;this.save();}
  gain(m,amount,log=[]){
@@ -208,7 +208,7 @@ class Game {
   if(damage){m.hp=Math.max(0,m.hp-damage);this.log(this.name(m)+' verliert KP.');}
   if(m.item===234)m.hp=Math.min(max,m.hp+Math.max(1,Math.floor(max/16)));
  }
- endTurn(){if(!this.battle)return;const b=this.battle;this.mons().forEach((m,i)=>this.residual(m,i));if(b.weatherTurns>0&&--b.weatherTurns===0)b.weather='';this.checkEnd();this.save();}
+ endTurn(){if(!this.battle)return;const b=this.battle;this.mons().forEach((m,i)=>this.residual(m,i));b.volatile.forEach(v=>{v.protect=false;v.flinch=false;});if(b.weatherTurns>0&&--b.weatherTurns===0)b.weather='';this.checkEnd();this.save();}
  checkEnd(){const b=this.battle;if(!b||b.result)return;let [p,e]=this.mons();
   if(e.hp<=0){this.log(this.name(e)+' wurde besiegt.');const participants=this.s.party.filter(m=>b.participants.includes(m.id)&&m.hp>0);const exp=Math.floor(this.species(e).yieldExp*e.level/7*(b.trainer===null?1:1.5)/Math.max(1,participants.length));
    for(const m of participants){for(let i=0;i<6;i++){const remaining=510-m.ev.reduce((a,b)=>a+b,0);m.ev[i]=Math.min(255,m.ev[i]+Math.min(remaining,this.species(e).evs[i]||0));}this.log(this.name(m)+' erhält '+exp+' EP.');this.gain(m,exp,b.log);}

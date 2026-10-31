@@ -137,7 +137,7 @@ function showServices(){
  const h=header(),town=['MAP_TYPE_CITY_TOWN','MAP_TYPE_INTERIOR'].includes(h.mapType),buttons=[];
  if(town){buttons.push(btn('Pokécenter · kostenlos heilen',()=>{g.heal();g.s.lastCenter={map:g.s.map,x:g.s.x,y:g.s.y};g.save();closeModal();toast('Dein Team ist wieder fit. KP, AP und Status wurden geheilt.');showWorld();},'primary'),btn('Pokémon-Markt',()=>{closeModal();showShop();}));}
  buttons.push(btn('PC öffnen',()=>{closeModal();showBoxes();}),btn('Arenen & Orden',()=>{closeModal();showGyms();}));
- modal(h.name,el('p',{},town?'Die freien Ortsdienste stehen hier bereit. Originale Story-Dialoge und Rätsel werden nicht ausgeführt.':'Auf dieser Route gibt es kein Pokécenter und keinen Markt. Per Karte kannst du jederzeit in eine Stadt reisen.'),buttons);
+ modal(h.name,el('p',{},town?'Hier kannst du dein Team heilen oder einkaufen.':'Auf dieser Route gibt es kein Pokécenter und keinen Markt. Per Karte kannst du jederzeit in eine Stadt reisen.'),buttons);
 }
 function showTeam(battleSwitch=false){
  const rows=el('div',{class:'scroll'});for(let i=0;i<g.s.party.length;i++){const m=g.s.party[i],info=el('div',{class:'grow'},el('h3',{},g.name(m)+' · Lv. '+m.level),typeTags(m),hpbar(m),el('small',{},m.hp+'/'+g.stats(m)[0]+' KP'+(m.status?' · '+PWF.statusLabel[m.status]:'')));
@@ -162,14 +162,14 @@ function showBag(inBattle=false){
  const rows=el('div',{class:'scroll'});Object.entries(g.s.bag).filter(([id,n])=>n>0).sort((a,b)=>Number(a[0])-Number(b[0])).forEach(([key,n])=>{const id=Number(key);rows.append(el('div',{class:'row'},el('div',{class:'grow'},el('h3',{},g.itemName(id)),el('small',{},'Anzahl: '+n)),btn('Einsetzen',()=>{
    if(inBattle&&(id<=16||/ball$/i.test(g.itemName(id)))){g.catch(id);showBattle();return;}
    if([76,77,79].includes(id)&&!inBattle){g.s.repel=id===76?200:id===77?250:100;g.s.bag[id]--;g.save();toast('Schutz aktiviert.');showBag();return;}
-   choosePartyTarget('Item einsetzen',m=>{const index=g.s.party.indexOf(m);const apply=slot=>{closeModal();if(inBattle){g.useInBattle(id,index,slot);showBattle();}else{g.item(id,index,slot).forEach(toast);showBag();}};if(id>=328&&id<=427)chooseMoveSlot(m,apply);else apply(0);});
+   choosePartyTarget('Item einsetzen',m=>{const index=g.s.party.indexOf(m);const apply=slot=>{closeModal();if(inBattle){g.useInBattle(id,index,slot);showBattle();}else{g.item(id,index,slot).forEach(toast);showBag();}};if(id>=328&&id<=427)chooseMoveSlot(m,apply);else if(data.items[id]?.flags?.[5]&1)modal('AP wiederherstellen',el('div',{class:'grid'},m.moves.map((p,i)=>btn(data.moves[p.id].name+' · '+p.pp+'/'+g.maxPP(p)+' AP',()=>apply(i),'quiet',p.pp>=g.maxPP(p)))));else apply(0);});
   },'primary'),!inBattle?btn('Geben',()=>choosePartyTarget('Item geben',m=>{g.equip(id,g.s.party.indexOf(m));closeModal();showBag();}),'quiet'):null));});
  showPage('bag',[titleHead('Dein Beutel',money()+' · Pokébälle, Medizin, TMs und gehaltene Items',[btn(inBattle?'Zum Kampf':'Zurück',()=>inBattle?showBattle():showWorld(),'quiet')]),rows]);
 }
 function choosePartyTarget(title,callback){modal(title,el('div',{},g.s.party.map(m=>el('div',{class:'row'},art(m.species),el('div',{class:'grow'},g.name(m)+' · '+m.hp+'/'+g.stats(m)[0]+' KP'),btn('Wählen',()=>callback(m),'primary')))));}
 function showShop(){
  let input=el('input',{placeholder:'Item suchen …'}),rows=el('div',{class:'scroll'}),balance=el('span',{},money());
- const render=()=>{balance.textContent=money();const q=input.value.toLowerCase();const catalog=data.items.filter(i=>i.id>0&&i.price>0&&i.name.toLowerCase().includes(q));if(!q)catalog.sort((a,b)=>{const fav=[4,3,2,17,26,25,24,28,18,19,20,21,22,27];return (fav.includes(a.id)?fav.indexOf(a.id):-1)-(fav.includes(b.id)?fav.indexOf(b.id):-1);});
+ const render=()=>{balance.textContent=money();const q=input.value.toLowerCase();const catalog=data.items.filter(i=>i.id>0&&i.price>0&&i.name.toLowerCase().includes(q));if(!q)catalog.sort((a,b)=>{const fav=[4,3,2,17,26,25,24,28,18,19,20,21,22,27];return (fav.includes(a.id)?fav.indexOf(a.id):999)-(fav.includes(b.id)?fav.indexOf(b.id):999);});
   rows.replaceChildren(...catalog.map(item=>el('div',{class:'row'},el('div',{class:'grow'},el('h3',{},item.name),el('small',{},item.price+' ₽ · Im Beutel: '+g.quantity(item.id))),btn('Kaufen',()=>{g.buy(item.id);render();},'primary',g.s.money<item.price),btn('Verkaufen',()=>{g.sell(item.id);render();},'quiet',g.quantity(item.id)===0))));
   if('link-kabel'.includes(q)||!q)rows.prepend(el('div',{class:'row'},el('div',{class:'grow'},el('h3',{},'Link-Kabel'),el('small',{},'2.000 ₽ · Tauschentwicklungen ohne Tausch')),btn('Kaufen',()=>{g.buy(9000);render();},'primary',g.s.money<2000)));
  };input.oninput=render;render();showPage('shop',[titleHead('Pokémon-Markt','Freier Markt: alle importierten käuflichen Items. Nicht jeder Spezialeffekt ist bereits umgesetzt.',[backButton(),balance]),input,rows]);

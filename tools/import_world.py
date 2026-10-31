@@ -127,7 +127,12 @@ def build(rompath,outpath,prepare_only=False):
   return parts
  for i,(asset,job) in enumerate(jobs.items()):
   image_path=out/f'maps/{asset}.png';depth_path=out/f'maps/{asset}.depth'
-  if image_path.exists() and depth_path.exists():continue
+  if image_path.exists() and depth_path.exists():
+   try:
+    with Image.open(image_path) as check:assert check.size==(1152,1152);check.verify()
+    assert depth_path.stat().st_size==1152*1152*2
+    continue
+   except (OSError,AssertionError):image_path.unlink(missing_ok=True);depth_path.unlink(missing_ok=True)
   try:
    b=lands[job['land']];terrain,props,msize,_=struct.unpack_from('<4I',b);po=20+U16(b,18)+terrain;mo=po+props;tex=textures[job['texture']]
    parts=add_model(b[mo:mo+msize],tex,np.zeros(3));ground=parts[:]
@@ -136,7 +141,7 @@ def build(rompath,outpath,prepare_only=False):
     bank=rooms if job['room'] else field
     if idx>=len(bank):raise ValueError(f'model {idx} exceeds bank')
     parts+=add_model(bank[idx],tex,pos,rot,sc)
-   pix,depth=render(parts);Image.fromarray(pix).save(image_path);depth_path.write_bytes(np.clip(np.round(depth*64+32768),0,65535).astype('<u2').tobytes())
+   pix,depth=render(parts);image_temp=image_path.with_suffix('.tmp');Image.fromarray(pix).save(image_temp,format='PNG');image_temp.replace(image_path);depth_temp=depth_path.with_suffix('.tmp');depth_temp.write_bytes(np.clip(np.round(depth*64+32768),0,65535).astype('<u2').tobytes());depth_temp.replace(depth_path)
    # Per-tile walking elevation from the map mesh, excluding buildings/props.
    heights=np.full((32,32),16.,dtype=np.float32)
    yy,xx=np.mgrid[0:32,0:32];wx=xx*16-248;wz=yy*16-248;best=np.full((32,32),1e9)
@@ -154,9 +159,10 @@ def build(rompath,outpath,prepare_only=False):
  (out/'world.json').write_text(json.dumps(manifest,ensure_ascii=False,separators=(',',':')))
  (out/'import-report.json').write_text(json.dumps(dict(failures=failures,cells=len(world),rendered=len(jobs)-len(failures)),indent=2))
  archive=out.with_suffix('.pwf.zip')
- with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
+ with zipfile.ZipFile(str(archive)+'.tmp','w',zipfile.ZIP_DEFLATED) as z:
   for f in out.rglob('*'):
    if f.is_file():z.write(f,f.relative_to(out))
+ pathlib.Path(str(archive)+'.tmp').replace(archive)
  print(json.dumps(dict(stage='complete',archive=str(archive),failures=failures)),flush=True)
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('rom');p.add_argument('output');p.add_argument('--prepare-only',action='store_true');a=p.parse_args();build(a.rom,a.output,a.prepare_only)
